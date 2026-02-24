@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Live Score</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<style>
+
+body{
+background:#0a0a0a;
+color:white;
+font-family:Arial;
+}
+
+.match{
+background:#121212;
+margin:10px;
+padding:15px;
+border-radius:10px;
+transition:0.2s;
+}
+
+.match:hover{
+transform:translateY(-3px);
+}
+
+.score{
+font-size:30px;
+}
+
+.live{
+color:red;
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>LIVE MATCHES</h2>
+<div id="matches"></div>
+
+<script>
+
+const params=new URLSearchParams(location.search)
+const eventId=params.get("event")
+
+const supabase = window.supabase.createClient(
+"PASTE_URL",
+"PASTE_KEY"
+)
+
+async function load(){
+
+let { data } = await supabase
+.from("matches")
+.select("*")
+.eq("event_id",eventId)
+
+let html=""
+
+data.forEach(m=>{
+
+html+=`
+<div class="match">
+<div class="${m.status}">${m.status}</div>
+<div class="score">${m.score1} - ${m.score2}</div>
+Table ${m.table_no}
+</div>
+`
+
+})
+
+document.getElementById("matches").innerHTML=html
+
+}
+
+supabase
+.channel("score")
+.on(
+"postgres_changes",
+{event:"UPDATE",schema:"public",table:"matches"},
+payload=>{
+load()
+}
+)
+.subscribe()
+
+load()
+
+</script>
+
+</body>
+</html>
