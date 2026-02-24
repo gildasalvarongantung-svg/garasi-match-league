@@ -2,107 +2,37 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Garasi Match League</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<title>Pool Events</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <style>
 
 body{
-background:#0f172a;
+background:#0b0b0b;
 color:white;
 font-family:Arial;
 margin:0;
 }
 
 header{
-background:#020617;
-padding:15px;
-text-align:center;
-font-size:24px;
-font-weight:bold;
-}
-
-.container{
-max-width:1100px;
-margin:auto;
+background:#111;
 padding:20px;
-}
-
-.match{
-background:#1e293b;
-margin-bottom:15px;
-border-radius:10px;
-padding:15px;
-}
-
-.top{
 display:flex;
 justify-content:space-between;
-margin-bottom:10px;
 }
 
-.table{
-font-weight:bold;
-font-size:18px;
-}
-
-.status{
-padding:4px 10px;
-border-radius:6px;
-font-size:14px;
-}
-
-.live{
-background:#16a34a;
-}
-
-.finished{
-background:#64748b;
-}
-
-.players{
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.player{
-width:40%;
-text-align:center;
-}
-
-.player input{
-width:100%;
-text-align:center;
-font-size:18px;
-background:transparent;
-border:none;
-color:white;
-outline:none;
-}
-
-.score{
-font-size:30px;
-margin:10px 0;
-}
-
-.controls button{
-font-size:18px;
-padding:5px 10px;
-margin:3px;
+.event{
+background:#121212;
+padding:20px;
+margin:15px;
+border-radius:12px;
 cursor:pointer;
+transition:0.3s;
 }
 
-.admin{
-margin-bottom:20px;
-text-align:center;
-}
-
-.admin button{
-padding:10px 15px;
-font-size:16px;
-cursor:pointer;
+.event:hover{
+transform:scale(1.03);
+box-shadow:0 0 20px rgba(255,255,255,0.15);
 }
 
 </style>
@@ -111,175 +41,51 @@ cursor:pointer;
 <body>
 
 <header>
-GARASI MATCH LEAGUE
+<h2>POOL EVENTS</h2>
+<button onclick="owner()">Owner</button>
 </header>
 
-<div class="container">
-
-<div class="admin">
-<button onclick="addMatch()">Tambah Match</button>
-</div>
-
-<div id="matches"></div>
-
-</div>
+<div id="events"></div>
 
 <script>
 
-const supabaseClient = supabase.createClient(
-"https://rrjxsdxaholwhdzidpvx.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyanhzZHhhaG9sd2hkemlkcHZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzcwNTcsImV4cCI6MjA4NzQxMzA1N30.VIcs9IqSpZUAw43gYYQ4RWWb29dBIk422BuQzWeyA6k"
+const supabase = window.supabase.createClient(
+"PASTE_URL",
+"PASTE_KEY"
 )
 
-async function loadMatches(){
+async function loadEvents(){
 
-const { data } = await supabaseClient
-.from("matches")
+let { data } = await supabase
+.from("events")
 .select("*")
-.order("table_number")
 
-const container = document.getElementById("matches")
-container.innerHTML=""
+let html=""
 
-data.forEach(match=>{
+data.forEach(e=>{
 
-const statusClass = match.status === "live" ? "live" : "finished"
-
-const div=document.createElement("div")
-div.className="match"
-
-div.innerHTML=`
-
-<div class="top">
-<div class="table">
-Table 
-<input value="${match.table_number}" 
-onchange="updateTable(${match.id},this.value)" 
-style="width:40px">
-</div>
-
-<div class="status ${statusClass}" 
-onclick="toggleStatus(${match.id},'${match.status}')">
-${match.status || "live"}
-</div>
-</div>
-
-<div class="players">
-
-<div class="player">
-<input value="${match.player1}" 
-onchange="updateName(${match.id},1,this.value)">
-<div class="score">${match.score1}</div>
-<div class="controls">
-<button onclick="changeScore(${match.id},1,-1)">-</button>
-<button onclick="changeScore(${match.id},1,1)">+</button>
-</div>
-</div>
-
-<div>VS</div>
-
-<div class="player">
-<input value="${match.player2}" 
-onchange="updateName(${match.id},2,this.value)">
-<div class="score">${match.score2}</div>
-<div class="controls">
-<button onclick="changeScore(${match.id},2,-1)">-</button>
-<button onclick="changeScore(${match.id},2,1)">+</button>
-</div>
-</div>
-
+html+=`
+<div class="event" onclick="openEvent('${e.id}')">
+<h3>${e.name}</h3>
+Format: ${e.format}
 </div>
 `
 
-container.appendChild(div)
-
 })
 
-}
-
-async function changeScore(id,player,amount){
-
-const { data } = await supabaseClient
-.from("matches")
-.select("*")
-.eq("id",id)
-.single()
-
-let s1=data.score1
-let s2=data.score2
-
-if(player===1) s1+=amount
-if(player===2) s2+=amount
-
-if(s1<0) s1=0
-if(s2<0) s2=0
-
-await supabaseClient
-.from("matches")
-.update({score1:s1,score2:s2})
-.eq("id",id)
+document.getElementById("events").innerHTML=html
 
 }
 
-async function updateName(id,player,name){
-
-let updateData={}
-
-if(player===1) updateData.player1=name
-if(player===2) updateData.player2=name
-
-await supabaseClient
-.from("matches")
-.update(updateData)
-.eq("id",id)
-
+function openEvent(id){
+location.href="event.html?event="+id
 }
 
-async function updateTable(id,value){
-
-await supabaseClient
-.from("matches")
-.update({table_number:value})
-.eq("id",id)
-
+function owner(){
+location.href="owner.html"
 }
 
-async function toggleStatus(id,status){
-
-let newStatus = status === "live" ? "finished" : "live"
-
-await supabaseClient
-.from("matches")
-.update({status:newStatus})
-.eq("id",id)
-
-}
-
-async function addMatch(){
-
-await supabaseClient
-.from("matches")
-.insert({
-table_number:1,
-player1:"Player 1",
-player2:"Player 2",
-score1:0,
-score2:0,
-status:"live"
-})
-
-}
-
-loadMatches()
-
-supabaseClient
-.channel("realtime")
-.on(
-"postgres_changes",
-{event:"*",schema:"public",table:"matches"},
-()=> loadMatches()
-)
-.subscribe()
+loadEvents()
 
 </script>
 
